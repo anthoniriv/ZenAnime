@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { extraerSlugDeUrl, FUENTE_CODES } from '@/lib/slug-utils';
 import type { AnimeResult } from '@/types/anime';
 
 interface AnimeCardProps {
@@ -9,8 +10,9 @@ interface AnimeCardProps {
 }
 
 export default function AnimeCard({ anime }: AnimeCardProps) {
-  const encodedUrl = encodeURIComponent(anime.url);
-  const href = `/anime?url=${encodedUrl}&fuente=${anime.fuente}`;
+  const slug = extraerSlugDeUrl(anime.url, anime.fuente);
+  const fuenteCode = FUENTE_CODES[anime.fuente];
+  const href = `/anime/${fuenteCode}/${slug}`;
 
   return (
     <Link href={href} className="group">

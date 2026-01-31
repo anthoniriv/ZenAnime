@@ -2,6 +2,10 @@
 
 Web para ver anime sin publicidad. Busca y reproduce anime de forma limpia y sin interrupciones.
 
+> **⚠️ Disclaimer – Solo uso educativo**
+>
+> Este proyecto es **únicamente con fines educativos** para aprender desarrollo web, scraping y APIs. No está afiliado ni respaldado por ningún sitio de streaming. El uso de este software puede violar los Términos de Servicio de sitios de terceros. El usuario es responsable de cumplir con las leyes de su jurisdicción. No se recomienda su uso para consumo de contenido con derechos de autor.
+
 ## Tecnologías
 
 - [Next.js](https://nextjs.org)

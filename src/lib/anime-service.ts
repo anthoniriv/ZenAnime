@@ -5,7 +5,33 @@ import {
   obtenerDeCache,
   guardarEnCache,
 } from './utils';
+import { buscarAnimeListaJikan } from './jikan-api';
 import type { AnimeResult, AnimeDetails, VideoSource, Episode } from '@/types/anime';
+
+/** Filtra resultados que no tienen relación con la búsqueda */
+function esRelevante(
+  tituloResultado: string,
+  queryNormalizado: string,
+  titulosJikan: string[]
+): boolean {
+  const tituloNorm = normalizarNombreAnime(tituloResultado);
+  const palabrasQuery = queryNormalizado.split(/\s+/).filter((p) => p.length >= 2);
+
+  // Al menos una palabra de la búsqueda debe aparecer en el título
+  for (const palabra of palabrasQuery) {
+    if (tituloNorm.includes(palabra)) return true;
+  }
+
+  // O coincide con títulos de Jikan (ej: "jujusu" -> Jikan devuelve "Jujutsu Kaisen")
+  for (const ref of titulosJikan) {
+    const refNorm = normalizarNombreAnime(ref);
+    if (tituloNorm.includes(refNorm) || refNorm.includes(tituloNorm)) return true;
+    const palabrasRef = refNorm.split(/\s+/).filter((p) => p.length >= 3);
+    if (palabrasRef.some((p) => tituloNorm.includes(p))) return true;
+  }
+
+  return false;
+}
 
 async function buscarAnimeJKanime(nombreAnime: string): Promise<AnimeResult[]> {
   try {
@@ -92,16 +118,35 @@ async function buscarAnimeFlv(nombreAnime: string): Promise<AnimeResult[]> {
 }
 
 export async function buscarAnime(nombreAnime: string): Promise<AnimeResult[]> {
-  const cacheKey = `anime:${normalizarNombreAnime(nombreAnime)}`;
+  const queryNorm = normalizarNombreAnime(nombreAnime);
+  const cacheKey = `anime:${queryNorm}`;
   const cached = obtenerDeCache<AnimeResult[]>(cacheKey);
   if (cached) {
     return cached;
   }
 
-  const [resultadosJK, resultadosFlv] = await Promise.all([
-    buscarAnimeJKanime(nombreAnime),
-    buscarAnimeFlv(nombreAnime),
-  ]);
+  // Buscar en Jikan primero para obtener títulos de referencia (mejor manejo de typos)
+  const jikanAnimes = await buscarAnimeListaJikan(nombreAnime);
+  const titulosJikan = jikanAnimes.map((a) => a.title).concat(
+    jikanAnimes.map((a) => a.title_english).filter(Boolean) as string[]
+  );
+
+  // Buscar en jkanime y animeflv (también con títulos de Jikan si hay typos)
+  const queriesBusqueda = [nombreAnime];
+  if (titulosJikan.length > 0 && normalizarNombreAnime(titulosJikan[0]) !== queryNorm) {
+    queriesBusqueda.push(titulosJikan[0]);
+  }
+
+  const resultadosJK: AnimeResult[] = [];
+  const resultadosFlv: AnimeResult[] = [];
+  for (const q of queriesBusqueda) {
+    const [jk, flv] = await Promise.all([
+      buscarAnimeJKanime(q),
+      buscarAnimeFlv(q),
+    ]);
+    resultadosJK.push(...jk);
+    resultadosFlv.push(...flv);
+  }
 
   const todosResultados = [...resultadosJK, ...resultadosFlv];
   const unicos: AnimeResult[] = [];
@@ -109,7 +154,7 @@ export async function buscarAnime(nombreAnime: string): Promise<AnimeResult[]> {
 
   for (const resultado of todosResultados) {
     const clave = normalizarNombreAnime(resultado.titulo);
-    if (!vistos.has(clave)) {
+    if (!vistos.has(clave) && esRelevante(resultado.titulo, queryNorm, titulosJikan)) {
       vistos.add(clave);
       unicos.push(resultado);
     }

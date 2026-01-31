@@ -50,6 +50,22 @@ function normalizeTitle(title: string): string {
     .trim();
 }
 
+/** Busca múltiples anime en Jikan (para mejorar búsqueda con typos) */
+export async function buscarAnimeListaJikan(query: string): Promise<JikanAnime[]> {
+  try {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const searchQuery = encodeURIComponent(normalizeTitle(query).slice(0, 50));
+    const response = await fetch(
+      `${JIKAN_BASE_URL}/anime?q=${searchQuery}&limit=10&sfw=true&order_by=popularity`
+    );
+    if (!response.ok) return [];
+    const data: JikanSearchResponse = await response.json();
+    return data.data || [];
+  } catch {
+    return [];
+  }
+}
+
 export async function buscarAnimeEnJikan(titulo: string): Promise<JikanAnime | null> {
   const cacheKey = normalizeTitle(titulo);
   const cached = jikanCache.get(cacheKey);

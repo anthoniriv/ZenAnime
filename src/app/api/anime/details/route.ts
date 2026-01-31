@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { obtenerDetallesAnime } from '@/lib/anime-service';
+import { reconstruirUrlAnime } from '@/lib/slug-utils';
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const url = searchParams.get('url');
-  const fuente = searchParams.get('fuente') as 'jkanime' | 'animeflv';
+export async function POST(request: NextRequest) {
+  let body: { slug?: string; fuente?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Body JSON inválido' }, { status: 400 });
+  }
 
-  if (!url || !fuente) {
+  const { slug, fuente } = body;
+
+  if (!slug || !fuente) {
     return NextResponse.json(
-      { error: 'Se requieren los parámetros "url" y "fuente"' },
+      { error: 'Se requieren "slug" y "fuente" en el body' },
       { status: 400 }
     );
   }
@@ -19,6 +25,8 @@ export async function GET(request: NextRequest) {
       { status: 400 }
     );
   }
+
+  const url = reconstruirUrlAnime(slug, fuente);
 
   try {
     const detalles = await obtenerDetallesAnime(url, fuente);

@@ -1,4 +1,12 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ZenAnime
+
+Web para ver anime sin publicidad. Busca y reproduce anime de forma limpia y sin interrupciones.
+
+## Tecnologías
+
+- [Next.js](https://nextjs.org)
+- React
+- Tailwind CSS
 
 ## Getting Started
 
